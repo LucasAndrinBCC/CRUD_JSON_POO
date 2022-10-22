@@ -1,0 +1,10 @@
+{
+    "name": "project/objects-orientation",
+    "type": "project",
+    "description": "First PHP project with autoload",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
