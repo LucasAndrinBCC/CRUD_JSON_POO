@@ -1,12 +1,3 @@
-<?php
-require '../../../vendor/autoload.php';
-use Http\Models\Contato;
-
-$contatos = Contato::getContatos();
-
-require_once '../layouts/layout-header.php';
-?>
-
 <div class="shadow rounded mt-5 px-4 pb-2">
 
     <table class="table tabled-dark table-striped table-hover">
@@ -29,6 +20,10 @@ require_once '../layouts/layout-header.php';
     
         <tbody>
             <?php
+                use App\Http\Models\Contact;
+
+                $contatos = Contact::get();
+                
                 if ($contatos) {
                     foreach ($contatos as $key => $contato) {
                         ?>
@@ -55,7 +50,3 @@ require_once '../layouts/layout-header.php';
     </table>
 
 </div>
-
-<?php
-require_once '../layouts/layout-footer.php';
-?>

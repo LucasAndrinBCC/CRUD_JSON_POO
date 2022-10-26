@@ -6,14 +6,15 @@ use stdClass;
 
 interface ModelInterface {
 
-    public function find(int $key): stdClass;
+    public static function find(int $key): stdClass;
 
-    public function where(array $conditions): array;
+    public static function get(): stdClass;
 
-    public function create(array $data): stdClass;
+    public static function create(array $data): stdClass;
 
-    public function update(int $key, array $data): stdClass;
+    public static function update(int $key, array $data): stdClass;
 
-    public function delete(int $key): bool;
+    public static function delete(int $key): bool;
 
+    public function save(): stdClass;
 }

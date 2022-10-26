@@ -8,43 +8,35 @@ use stdClass;
 
 class Model implements ModelInterface {
 
-    public string $primaryKey = 'id';
+    public static string $primaryKey = 'id';
 
-    public string $table;
+    public static string $table;
 
-    public array $fillable;
+    public static array $fillable;
 
-    public function fileGetContents()
+    /**
+     * Preenche dados passados congruentes ao atributo fillable do objeto
+     * 
+     * @param array $data
+     */
+    function __construct(array $data)
     {
-        return json_decode(file_get_contents($this->table));
+        foreach ($this->fillable as $key) {
+            if (array_key_exists($key, $data)) {
+                $this->{$key} = $data[$key];
+            } else {
+                $this->{$key} = null;
+            }
+        }
     }
 
-    public function fileOpen(string $method)
+    public static function find(int $key): stdClass
     {
-        return fopen($this->table, $method); // w+
-    }
-
-    public function fileWrite($data)
-    {
-        $file = $this->fileOpen("w+");
-
-        fwrite($file, json_encode($data));
-
-        $this->fileClose($file);
-    }
-
-    public function fileClose($file)
-    {
-        fclose($file);
-    }
-
-    public function find(int $key): stdClass
-    {
-        $table = $this->fileGetContents();
+        $table = self::fileGetContents();
 
         foreach ($table as $row) {
             $rowArray = (array) $row;
-            if ($rowArray[$this->primaryKey] == $key) {
+            if ($rowArray[self::$primaryKey] == $key) {
                 return $row;
             }
         }
@@ -52,52 +44,14 @@ class Model implements ModelInterface {
         return null;
     }
 
-    public function where(array $conditions): array
+    public static function get(): stdClass
     {
-        $table = $this->fileGetContents();
-
-        $rows = [];
-        foreach ($table as $row) {
-            $matches = false;
-
-            if (is_array($conditions[0])) {
-                foreach ($conditions as $condition) {
-                    $matches = $this->relativeArraySearch($condition, $row);
-                }
-            } else {
-                $matches = $this->relativeArraySearch($conditions, $row);
-            }
-
-            if ($matches) {
-                $rows[] = $row;
-            }
-        }
-
-        return $rows;
+        return self::fileGetContents();
     }
 
-    public function relativeArraySearch(array $condition, $row): bool
+    public static function create(array $data): stdClass
     {
-        if (count($condition) === 3) {
-            return $this->whereKey($condition[0], $condition[1], $condition[3], $row);
-        }
-
-        return $this->whereKey($condition[0], '=', $condition[1], $row);
-    }
-
-    public function whereKey(string $key, string $operator, $expectedValue, array $row): bool
-    {
-        return match ($operator) {
-            '=' => $row[$key] == $expectedValue,
-            '<>', '!=' => $row[$key] != $expectedValue,
-            '>' => $row[$key] > $expectedValue,
-            '<' => $row[$key] < $expectedValue,
-        };
-    }
-
-    public function create(array $data): stdClass
-    {
-        $content = $this->fileGetContents();
+        $content = self::fileGetContents();
 
         $max = 0;
 
@@ -113,8 +67,8 @@ class Model implements ModelInterface {
 
         $newKey = $max + 1;
 
-        $newRow = [$this->primaryKey => $newKey];
-        foreach ($this->fillable as $key) {
+        $newRow = [self::$primaryKey => $newKey];
+        foreach (self::$fillable as $key) {
             if (array_key_exists($key, $data)) {
                 $newRow[$key] = $data[$key];
             } else {
@@ -124,21 +78,21 @@ class Model implements ModelInterface {
 
         $content[] = $newRow;
 
-        $this->fileWrite($content);
+        self::fileWrite($content);
 
         return (object) $newRow;
     }
 
-    public function update(int $key, array $data): stdClass
+    public static function update(int $key, array $data): stdClass
     {
-        $content = (array) $this->fileGetContents();
+        $content = (array) self::fileGetContents();
 
         foreach ($content as $index => $row) {
             $rowArray = (array) $row;
-            if ($rowArray[$this->primaryKey] == $key) {
+            if ($rowArray[self::$primaryKey] == $key) {
                 die(print_r((object) $row));
                 array_splice($content, $index, 1, $row);
-                $this->fileWrite($content);
+                self::fileWrite($content);
                 return $row;
             }
         }
@@ -146,19 +100,104 @@ class Model implements ModelInterface {
         return (object) [];
     }
 
-    public function delete(int $key): bool
+    public static function delete(int $key): bool
     {
-        $content = $this->fileGetContents();
+        $content = self::fileGetContents();
 
         foreach ($content as $index => $row) {
             $rowArray = (array) $row;
-            if ($rowArray[$this->primaryKey] == $key) {
+            if ($rowArray[self::$primaryKey] == $key) {
                 array_splice($content, $index, 1);
-                $this->fileWrite($content);
+                self::fileWrite($content);
                 return true;
             }
         }
 
         return false;
+    }
+
+    public function save(): stdClass
+    {
+        $data = [];
+
+        foreach ($this->fillable as $key) {
+            $data[$key] = $this->{$key};
+        }
+
+        $model = $this->create($data);
+
+        $this->{$this->primaryKey} = $model->{$this->primaryKey};
+
+        return $model;
+    }
+
+    // public function where(array $conditions): array
+    // {
+    //     $table = $this->fileGetContents();
+
+    //     $rows = [];
+    //     foreach ($table as $row) {
+    //         $matches = false;
+
+    //         if (is_array($conditions[0])) {
+    //             foreach ($conditions as $condition) {
+    //                 $matches = $this->relativeArraySearch($condition, $row);
+    //             }
+    //         } else {
+    //             $matches = $this->relativeArraySearch($conditions, $row);
+    //         }
+
+    //         if ($matches) {
+    //             $rows[] = $row;
+    //         }
+    //     }
+
+    //     return $rows;
+    // }
+
+    // public function relativeArraySearch(array $condition, $row): bool
+    // {
+    //     if (count($condition) === 3) {
+    //         return $this->whereKey($condition[0], $condition[1], $condition[3], $row);
+    //     }
+
+    //     return $this->whereKey($condition[0], '=', $condition[1], $row);
+    // }
+
+    // public function whereKey(string $key, string $operator, $expectedValue, array $row): bool
+    // {
+    //     return match ($operator) {
+    //         '=' => $row[$key] == $expectedValue,
+    //         '<>', '!=' => $row[$key] != $expectedValue,
+    //         '>' => $row[$key] > $expectedValue,
+    //         '<' => $row[$key] < $expectedValue,
+    //     };
+    // }
+
+    /**
+     * File Methods
+     */
+    public static function fileGetContents()
+    {
+        return json_decode(file_get_contents(self::$table));
+    }
+
+    public static function fileOpen(string $method)
+    {
+        return fopen(self::$table, $method); // w+
+    }
+
+    public static function fileWrite($data)
+    {
+        $file = self::fileOpen("w+");
+
+        fwrite($file, json_encode($data));
+
+        self::fileClose($file);
+    }
+
+    public static function fileClose($file)
+    {
+        fclose($file);
     }
 }
