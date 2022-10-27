@@ -13,13 +13,19 @@ class Actions {
 $actions = new Actions;
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    echo $actions->contactController->getContacts();
+    if (isset($_GET['name'])) {
+        echo $actions->contactController->getContacts($_GET['name']);
+    } else {
+        echo $actions->contactController->getContacts();
+    }
 } else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     echo $actions->contactController->createContact($_POST);
 } else if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-    
-} else if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-    
+    parse_str(file_get_contents("php://input"), $_PUT);
+
+    echo $actions->contactController->updateContact($_PUT);
+} else if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+    echo $actions->contactController->deleteContact($_GET["id"]);
 }
 
 

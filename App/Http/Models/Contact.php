@@ -9,6 +9,7 @@ use App\Http\Models\JsonFile;
 use ErrorException;
 
 class Contact implements ModelInterface {
+    protected string $primaryKey = 'id';
 
     protected string $file = 'resources/data/contatos.json';
     
@@ -18,8 +19,6 @@ class Contact implements ModelInterface {
         'sex',
         'telephone'
     ];
-
-    protected string $primaryKey = 'id';
 
     /**
      * Preenche dados passados congruentes ao atributo fillable do objeto
@@ -39,6 +38,11 @@ class Contact implements ModelInterface {
                 }
             }
         }
+    }
+
+    public function getPrimaryKey(): string
+    {
+        return $this->primaryKey;
     }
 
     public function find(int $key): self|null
@@ -108,7 +112,7 @@ class Contact implements ModelInterface {
             if ($row->{$this->primaryKey} == $searchKey) {
 
                 foreach ($this->fillable as $field) {
-                    if (array_key_exists($data, $field)) {
+                    if (array_key_exists($field, $data)) {
                         $row->{$field} = $data[$field];
                     } else {
                         $row->{$field} = null;

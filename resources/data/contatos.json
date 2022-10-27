@@ -1,9 +1,1 @@
-[
-    {
-        "name": "Lucas",
-        "age": "19",
-        "sex": "Masculino",
-        "telephone": "21312312",
-        "id": 1
-    }
-]
+[{"name":"Jaedson","age":"1231231","sex":"masculino","telephone":"1231231","id":1},{"name":"Gabriel","age":"12312","sex":"masculino","telephone":"123123","id":3},{"name":"Lucas Andrin","age":"123123","sex":"masculino","telephone":"12312","id":4}]

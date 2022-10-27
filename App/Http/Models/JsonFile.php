@@ -5,7 +5,7 @@ use stdClass;
 
 class JsonFile {
 
-    public function fileGetContents(string $filePath): stdClass|null
+    public function fileGetContents(string $filePath): array|null
     {
         return json_decode(file_get_contents($filePath));
     }
