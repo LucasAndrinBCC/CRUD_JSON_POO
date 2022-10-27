@@ -1,9 +1,25 @@
 <?php
 
-require_once 'vendor/autoload.php';
+function autoload() {
+    require_once('vendor/autoload.php');
+}
 
-require_once 'resources/views/layouts/layout-header.php';
+function view(string $path) {
+    require_once 'resources/views/'.$path;
+}
 
-require_once 'resources/views/layouts/layout-content.php';
+function layout(string $path) {
+    require_once 'resources/views/layouts/'.$path;
+}
 
-require_once 'resources/views/layouts/layout-footer.php';
+function asset(string $path) {
+    return 'resources/inc/'.$path;
+}
+
+autoload();
+
+layout('layout-header.php');
+
+layout('layout-content.php');
+
+layout('layout-footer.php');

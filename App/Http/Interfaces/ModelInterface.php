@@ -1,20 +1,18 @@
 <?php
-
 namespace App\Http\Interfaces;
 
 use stdClass;
 
 interface ModelInterface {
+    public function find(int $key): self|null;
 
-    public static function find(int $key): stdClass;
+    public function get(): array;
 
-    public static function get(): stdClass;
+    public function create(array $data): self;
 
-    public static function create(array $data): stdClass;
+    public function update(array $data, int $key = 0): self;
 
-    public static function update(int $key, array $data): stdClass;
+    public function delete(int $key): bool;
 
-    public static function delete(int $key): bool;
-
-    public function save(): stdClass;
+    public function save(): void;
 }

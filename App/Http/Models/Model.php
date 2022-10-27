@@ -1,203 +1,140 @@
 <?php
 namespace App\Http\Models;
 
-require_once 'vendor/autoload.php';
-
 use App\Http\Interfaces\ModelInterface;
+use App\Http\Models\JsonFile;
+use ErrorException;
 use stdClass;
 
 class Model implements ModelInterface {
+    
+    public string $primaryKey = 'id';
 
-    public static string $primaryKey = 'id';
-
-    public static string $table;
-
-    public static array $fillable;
+    public string $file;
+    
+    public array $fillable;
 
     /**
      * Preenche dados passados congruentes ao atributo fillable do objeto
      * 
      * @param array $data
      */
-    function __construct(array $data)
-    {
-        foreach ($this->fillable as $key) {
-            if (array_key_exists($key, $data)) {
-                $this->{$key} = $data[$key];
-            } else {
-                $this->{$key} = null;
+    function __construct(
+        array $data = [],
+        private $jsonFile = new JsonFile
+    ) {
+        if (!empty($data)) {
+            foreach ($this->fillable as $field) {
+                if (array_key_exists($field, $data)) {
+                    $this->{$field} = $data[$field];
+                } else {
+                    $this->{$field} = null;
+                }
             }
         }
     }
 
-    public static function find(int $key): stdClass
+    public function find(int $key): self|null
     {
-        $table = self::fileGetContents();
+        $content = $this->jsonFile->fileGetContents($this->file);
 
-        foreach ($table as $row) {
-            $rowArray = (array) $row;
-            if ($rowArray[self::$primaryKey] == $key) {
-                return $row;
+        foreach ($content as $row) {
+            if ($row->{$this->primaryKey} == $key) {
+                new self((array) $row);
             }
         }
 
         return null;
     }
 
-    public static function get(): stdClass
+    public function get(): array
     {
-        return self::fileGetContents();
+        return $this->jsonFile->fileGetContents($this->file) ?? [];
     }
 
-    public static function create(array $data): stdClass
+    public function create(array $data): self
     {
-        $content = self::fileGetContents();
+        $content = $this->jsonFile->fileGetContents($this->file) ?? [];
 
-        $max = 0;
+        $incrementedPrimaryKey = 1;
+        if (!empty($content)) {
+            $incrementedPrimaryKey = max(array_column((array) $content, $this->primaryKey)) + 1;
+        }
 
-        if (empty($content)) {
-            $content = [];
-        } else {
-            foreach ($content as $row) {
-                if ($row->id > $max) {
-                    $max = $row->id;
+        $object = new self($data);
+
+        $content->push($object);
+
+        if (!$this->jsonFile->filePutContents($this->file, $content)) {
+            throw new ErrorException('Error to put contents in file!');
+        }
+
+        return $object;
+    }
+
+    public function save(): void
+    {
+        $content = $this->jsonFile->fileGetContents($this->file) ?? [];
+
+        if ($this->{$this->primaryKey}) {
+            $this->{$this->primaryKey} = max(array_column((array) $content, $this->primaryKey)) + 1;
+        }
+
+        $fillableContent = [];
+        foreach ($this->fillable as $field) {
+            $fillableContent[$field] = $this->{$field};
+        }
+        
+        $this->update($fillableContent);
+    }
+
+    public function update(array $data, int $searchKey = 0): self
+    {
+        if (!$searchKey) {
+            $searchKey = $this->{$this->primaryKey};
+        }
+
+        $content = $this->jsonFile->fileGetContents($this->file);
+
+        foreach ($content as $key => $row) {
+            if ($row->{$this->primaryKey} == $searchKey) {
+
+                foreach ($this->fillable as $field) {
+                    if (array_key_exists($data, $field)) {
+                        $row->{$field} = $data[$field];
+                    } else {
+                        $row->{$field} = null;
+                    }
+                }
+
+                if (!$this->jsonFile->filePutContents($this->file, $content)) {
+                    throw new ErrorException('Error to put contents in file!');
+                } else {
+                    return new self((array) $row);
                 }
             }
         }
-
-        $newKey = $max + 1;
-
-        $newRow = [self::$primaryKey => $newKey];
-        foreach (self::$fillable as $key) {
-            if (array_key_exists($key, $data)) {
-                $newRow[$key] = $data[$key];
-            } else {
-                $newRow[$key] = null;
-            }
-        }
-
-        $content[] = $newRow;
-
-        self::fileWrite($content);
-
-        return (object) $newRow;
     }
 
-    public static function update(int $key, array $data): stdClass
+    public function delete(int $searchKey = 0): bool
     {
-        $content = (array) self::fileGetContents();
-
-        foreach ($content as $index => $row) {
-            $rowArray = (array) $row;
-            if ($rowArray[self::$primaryKey] == $key) {
-                die(print_r((object) $row));
-                array_splice($content, $index, 1, $row);
-                self::fileWrite($content);
-                return $row;
-            }
+        if (!$searchKey) {
+            $searchKey = $this->{$this->primaryKey};
         }
 
-        return (object) [];
-    }
-
-    public static function delete(int $key): bool
-    {
-        $content = self::fileGetContents();
+        $content = $this->jsonFile->fileGetContents($this->file);
 
         foreach ($content as $index => $row) {
-            $rowArray = (array) $row;
-            if ($rowArray[self::$primaryKey] == $key) {
+            if ($row->{$this->primaryKey} == $searchKey) {
+
                 array_splice($content, $index, 1);
-                self::fileWrite($content);
-                return true;
+
+                if (!$this->jsonFile->filePutContents($this->file, $content)) {
+                    throw new ErrorException('Error to put contents in file!');
+                } else {
+                    return true;
+                }
             }
         }
-
-        return false;
-    }
-
-    public function save(): stdClass
-    {
-        $data = [];
-
-        foreach ($this->fillable as $key) {
-            $data[$key] = $this->{$key};
-        }
-
-        $model = $this->create($data);
-
-        $this->{$this->primaryKey} = $model->{$this->primaryKey};
-
-        return $model;
-    }
-
-    // public function where(array $conditions): array
-    // {
-    //     $table = $this->fileGetContents();
-
-    //     $rows = [];
-    //     foreach ($table as $row) {
-    //         $matches = false;
-
-    //         if (is_array($conditions[0])) {
-    //             foreach ($conditions as $condition) {
-    //                 $matches = $this->relativeArraySearch($condition, $row);
-    //             }
-    //         } else {
-    //             $matches = $this->relativeArraySearch($conditions, $row);
-    //         }
-
-    //         if ($matches) {
-    //             $rows[] = $row;
-    //         }
-    //     }
-
-    //     return $rows;
-    // }
-
-    // public function relativeArraySearch(array $condition, $row): bool
-    // {
-    //     if (count($condition) === 3) {
-    //         return $this->whereKey($condition[0], $condition[1], $condition[3], $row);
-    //     }
-
-    //     return $this->whereKey($condition[0], '=', $condition[1], $row);
-    // }
-
-    // public function whereKey(string $key, string $operator, $expectedValue, array $row): bool
-    // {
-    //     return match ($operator) {
-    //         '=' => $row[$key] == $expectedValue,
-    //         '<>', '!=' => $row[$key] != $expectedValue,
-    //         '>' => $row[$key] > $expectedValue,
-    //         '<' => $row[$key] < $expectedValue,
-    //     };
-    // }
-
-    /**
-     * File Methods
-     */
-    public static function fileGetContents()
-    {
-        return json_decode(file_get_contents(self::$table));
-    }
-
-    public static function fileOpen(string $method)
-    {
-        return fopen(self::$table, $method); // w+
-    }
-
-    public static function fileWrite($data)
-    {
-        $file = self::fileOpen("w+");
-
-        fwrite($file, json_encode($data));
-
-        self::fileClose($file);
-    }
-
-    public static function fileClose($file)
-    {
-        fclose($file);
     }
 }

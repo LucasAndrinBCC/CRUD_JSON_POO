@@ -8,7 +8,7 @@ use App\Http\Models\Model;
 
 class Contact extends Model {
 
-    public string $table = 'resources/data/contatos.json';
+    public string $file = 'resources/data/contatos.json';
     
     public array $fillable = [
         'name',
