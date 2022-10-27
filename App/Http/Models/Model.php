@@ -4,7 +4,6 @@ namespace App\Http\Models;
 use App\Http\Interfaces\ModelInterface;
 use App\Http\Models\JsonFile;
 use ErrorException;
-use stdClass;
 
 class Model implements ModelInterface {
     
@@ -56,12 +55,8 @@ class Model implements ModelInterface {
     {
         $content = $this->jsonFile->fileGetContents($this->file) ?? [];
 
-        $incrementedPrimaryKey = 1;
-        if (!empty($content)) {
-            $incrementedPrimaryKey = max(array_column((array) $content, $this->primaryKey)) + 1;
-        }
-
         $object = new self($data);
+        $object->{$this->primaryKey} = max(array_column((array) $content, $this->primaryKey)) + 1;
 
         $content->push($object);
 

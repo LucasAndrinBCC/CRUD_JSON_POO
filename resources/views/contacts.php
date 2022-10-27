@@ -17,34 +17,8 @@
             </tr>
         </thead>
     
-        <tbody>
-            <?php
-                use App\Http\Models\Contact;
-
-                $ContactModel = new Contact();
-                $contacts = $ContactModel->get();
-                
-                if ($contacts) {
-                    foreach ($contacts as $contact) {
-                        ?>
-                            <tr>
-                                <th class="table-light"><?php echo $contact->id ?></th>
-                                <td class="table-light text-center"><?php echo $contact->name ?></td>
-                                <td class="table-light text-center"><?php echo $contact->age ?></td>
-                                <td class="table-light text-center"><?php echo $contact->sex ?></td>
-                                <td class="table-light text-center"><?php echo $contact->telephone ?></td>
-                                <td class="table-light text-center d-flex justify-content-center">
-                                    <form action="../../Http/Models/Contato.php" method="post">
-                                        <input type="hidden" name="acao" value="excluir">
-                                        <button type="submit" class="btn btn-danger" name="id" value="<?php echo $contact->id ?>"><i class="fa-solid fa-trash"></i></button>
-                                    </form>
-                                    <a class="btn btn-primary" href="alterar-contato.php?id=<?php echo $contact->id ?>"><i class="fa-solid fa-pencil"></i></a>
-                                </td>
-                            </tr>
-                        <?php
-                    }
-                }
-            ?>
+        <tbody id="content">
+            <!-- Content -->
         </tbody>
     
     </table>
